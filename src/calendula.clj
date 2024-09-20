@@ -1,6 +1,6 @@
 (ns calendula
   (:require [clojure.string :as str]
-            [nextjournal.impulse :as impulse]
+            [nextjournal.impulse :as impulse :refer [*req* defhandler]]
             [nextjournal.garden-id :as garden-id :refer [username displayname email]]
             [nextjournal.garden-email :as garden-email]
             [ring.util.codec :as codec])
@@ -54,6 +54,32 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; the app!
 
+(declare render-day)
+(declare render-week)
+
+(defhandler book-appointment [day hour]
+  ;; XXX race condition if multiple users are booking appointments at the same time
+  (swap! impulse/state assoc-in [:appointments (str day) (parse-long hour)] (email *req*))
+  (garden-email/send-email! {:to {:email owner-email}
+                             :subject (format "%s (%s) booked appointment at %s %s:00" (displayname *req*) (email *req*) day hour)})
+  (garden-email/send-email! {:to {:email (email *req*)}
+                             :subject (format "You booked an appointment at %s %s:00" day hour)})
+  (render-day *req* day))
+
+(defhandler unbook-appointment [day hour]
+  (swap! impulse/state update-in [:appointments (str day)] dissoc (parse-long hour))
+  (garden-email/send-email! {:to {:email owner-email}
+                             :subject (format "%s (%s) has canceled their appointment at %s %s:00" (displayname *req*) (email *req*) day hour)})
+  (garden-email/send-email! {:to {:email (email *req*)}
+                             :subject (format "You cancelled an appointment at %s %s:00" day hour)})
+  (render-day *req* day))
+
+(defhandler update-week [offset]
+  (render-week *req* (impulse/swap-in! impulse/state
+                                     [:user-state (username *req*) :week]
+                                     (fnil offset-week (start-of-week (now)))
+                                     (parse-long offset))))
+
 (defn render-day [req day]
   [:div {:id (str "date-" day)}
    [:strong (str (name (date->keyword day)))]
@@ -63,10 +89,9 @@
                             (= (get-in @impulse/state [:appointments day hour]) (email req)) :mine
                             :else nil)]
          :when status]              ; either free or booked by the current user
-     [:div {:hx-post (str (if (= status :free)
-                            "/book-appointment?"
-                            "/unbook-appointment?")
-                          (codec/form-encode {:day day :hour hour}))
+     [:div {:hx-post (if (= status :free)
+                       (book-appointment day hour)
+                       (unbook-appointment day hour))
             :hx-target (str "#date-" day)}
       [:input {:type "checkbox"
                :checked (= status :mine)}]
@@ -83,8 +108,8 @@
      [:div {:role "group" :style "margin-top: 1em"}
       (if (before? start-of-week today)
         [:button.outline {:disabled true} "← prev week"]
-        [:button.outline {:hx-post "/prev" :hx-target "#week"} "← prev week"])
-      [:button.outline {:hx-post "/next" :hx-target "#week"} "next week →"]]]))
+        [:button.outline {:hx-post (update-week -1) :hx-target "#week"} "← prev week"])
+      [:button.outline {:hx-post (update-week 1) :hx-target "#week"} "next week →"]]]))
 
 (defn index [req]
   (let [uname (username req)]
@@ -102,37 +127,8 @@
      (when uname
        (render-week req (get-in @impulse/state [:user-state uname :week] (start-of-week (now))))))))
 
-(defn book-appointment [{:as req :keys [params]}]
-  (let [{:strs [day hour]} params]
-    ;; XXX race condition if multiple users are booking appointments at the same time
-    (swap! impulse/state assoc-in [:appointments (str day) (parse-long hour)] (email req))
-    (garden-email/send-email! {:to {:email owner-email}
-                               :subject (format "%s (%s) booked appointment at %s %s:00" (displayname req) (email req) day hour)})
-    (garden-email/send-email! {:to {:email (email req)}
-                               :subject (format "You booked an appointment at %s %s:00" day hour)})
-    (render-day req day)))
-
-(defn unbook-appointment [{:as req :keys [params]}]
-  (let [{:strs [day hour]} params]
-    (swap! impulse/state update-in [:appointments (str day)] dissoc (parse-long hour))
-    (garden-email/send-email! {:to {:email owner-email}
-                               :subject (format "%s (%s) has canceled their appointment at %s %s:00" (displayname req) (email req) day hour)})
-    (garden-email/send-email! {:to {:email (email req)}
-                               :subject (format "You cancelled an appointment at %s %s:00" day hour)})
-    (render-day req day)))
-
-(defn update-week [offset req]
-  (render-week req (impulse/swap-in! impulse/state
-                                     [:user-state (username req) :week]
-                                     (fnil offset-week (start-of-week (now)))
-                                     offset)))
-
 (def routes
-  [["/" #'index]
-   ["/book-appointment" {:post #'book-appointment}]
-   ["/unbook-appointment" {:post #'unbook-appointment}]
-   ["/next" {:post (partial update-week 1)}]
-   ["/prev" {:post (partial update-week -1)}]])
+  [["/" #'index]])
 
 (defn start! [opts]
   (impulse/start! #'routes opts))

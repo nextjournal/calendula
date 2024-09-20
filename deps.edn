@@ -1,4 +1,6 @@
 {:paths ["src" "resources"]
  :deps {ring/ring-core {:mvn/version "1.12.1"}
-        io.github.nextjournal/impulse {:git/sha "83659db7d8037a86c9f3d9ec57f1080cf1b676fb"}}
+        io.github.nextjournal/impulse
+        {:local/root "../garden/impulse"}
+        #_ {:git/sha "83659db7d8037a86c9f3d9ec57f1080cf1b676fb"}}
  :aliases {:nextjournal/garden {:exec-fn calendula/start!}}}
