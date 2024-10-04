@@ -1,0 +1,61 @@
+{
+  "nodes": {
+    "garden": {
+      "inputs": {
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1726732424,
+        "narHash": "sha256-QX8bPuBvhmBLOiR0QYantHewSKH9n6L9QrCOzfLgV5Y=",
+        "owner": "nextjournal",
+        "repo": "garden-cli",
+        "rev": "72c00aee7b8e17c36c42e1f9f0db46b5e944b692",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nextjournal",
+        "repo": "garden-cli",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1711532879,
+        "narHash": "sha256-VUvOxVoxBokiZETZdZU97MnJpeKa19KqSOPlC84QB9Y=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "2230a20f2b5a14f2db3d7f13a2dc3c22517e790b",
+        "type": "github"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "ref": "nixpkgs-unstable",
+        "type": "indirect"
+      }
+    },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1726583932,
+        "narHash": "sha256-zACxiQx8knB3F8+Ze+1BpiYrI+CbhxyWpcSID9kVhkQ=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "658e7223191d2598641d50ee4e898126768fe847",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "garden": "garden",
+        "nixpkgs": "nixpkgs_2"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
