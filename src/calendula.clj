@@ -89,6 +89,7 @@
 (defn index [req]
   (let [uname (username req)]
     (impulse/page
+     {:title "Calendula"}
      [:nav
       [:ul
        [:li
