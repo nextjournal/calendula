@@ -26,7 +26,8 @@
   (.isBefore (LocalDate/parse a) (LocalDate/parse b)))
 
 (defn start-of-week [date]
-  (str (.with (LocalDate/parse date) (TemporalAdjusters/previous DayOfWeek/MONDAY))))
+  (str (LocalDate/.with (LocalDate/.plusDays (LocalDate/parse date) 1)
+                        (TemporalAdjusters/previous DayOfWeek/MONDAY))))
 
 (defn offset-week [date offset]
   (str (.plusWeeks (LocalDate/parse date) offset)))
